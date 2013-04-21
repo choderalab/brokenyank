@@ -6,10 +6,10 @@ YANK: GPU-accelerated calculation of ligand binding affinities
 Authors
 -------
 
-* John D. Chodera <jchodera@gmail.com>
-* Kim Branson <kim.branson@gmail.com>
-* Imran Haque <ihaque@gmail.com>
-* Michael Shirts <mrshirts@gmail.com>
+* John D. Chodera | jchodera@gmail.com
+* Kim Branson | kim.branson@gmail.com
+* Imran Haque | ihaque@gmail.com
+* Michael Shirts | mrshirts@gmail.com
 
 Copyright
 ---------
@@ -21,33 +21,37 @@ Prerequisites
 
 Use of this module requires the following
 
-* Python 2.6 or later
-  http://www.python.org
-
-* OpenMM with Python wrappers
+* OpenMM with Python wrappers: 
   http://simtk.org/home/openmm
 
-* NetCDF (compiled with netcdf4 support) and HDF5 (on which 
+* Python 2.6 or later: 
+  http://www.python.org
+
+* NetCDF (compiled with netcdf4 support):
   http://www.unidata.ucar.edu/software/netcdf/
+
+* HDF5 (required by NetCDF4): 
   http://www.hdfgroup.org/HDF5/
 
-* netcdf4-python (a Python interface for netcdf4)
+* netcdf4-python (a Python interface for netcdf4):
   http://code.google.com/p/netcdf4-python/
 
-* numpy and scipy
+* numpy and scipy:
   http://www.scipy.org/
 
-* mpi4py if MPI support is desired
+* mpi4py (if MPI support is desired):
   http://mpi4py.scipy.org/
   (Note that the mpi4py installation must be compiled against the appropriate MPI implementation.)
 
-* OpenEye toolkit and Python wrappers if mol2 and PDB reading features are used (requires academic or commercial license)
+* OpenEye toolkit and Python wrappers (if mol2 and PDB reading features are used ;requires academic or commercial license):
   http://www.eyesopen.com
 
-Note that the Enthought Python Distribution (EPD) provides many of these prerequisites (including Python, NetCDF 4, HDF5, netcdf4-python, numpy, and scipy):
-  http://www.enthought.com/products/epd.php
+Simplified prerequisite installation
+------------------------------------
 
-(Note that using EPD with OpenEye requires some care, as OpenEye tools are very selective about which Python and library versions are compatible.)
+The Enthought Python Distribution (EPD) provides many of these prerequisites (including Python, NetCDF 4, HDF5, netcdf4-python, numpy, and scipy): http://www.enthought.com/products/epd.php
+
+*Note that using EPD with OpenEye requires some care, as OpenEye tools are very selective about which Python and library versions are compatible.*
 
 For example, to use EPD 7.1-2 on OS X with OpenEye's latest toolkit, install OpenEye's toolkit and Python wrappers, then:
 
@@ -168,28 +172,36 @@ Please cite the following papers if you use YANK for a publication:
 
 * YANK 
 
-  Parton DL, Shirts MR, Wang K, Eastman P, Friedrichs M, Pande VS, Branson K, Mobley DL, Chodera JD. YANK: A GPU-accelerated platform for alchemical free energy calculations. In preparation.
+  Parton DL, Shirts MR, Wang K, Eastman P, Friedrichs M, Pande VS, Branson K, Mobley DL, Chodera JD. YANK: A GPU-accelerated platform for alchemical free energy calculations. 
+  In preparation.
 
 * OpenMM GPU-accelerated molecular mechanics library
 
-  Friedrichs MS, Eastman P, Vaidyanathan V, Houston M, LeGrand S, Beberg AL, Ensign DL, Bruns CM, and Pande VS. 
-  Accelerating molecular dynamic simulations on graphics processing units. J. Comput. Chem. 30:864, 2009. DOI: 10.1002/jcc.21209
+  Friedrichs MS, Eastman P, Vaidyanathan V, Houston M, LeGrand S, Beberg AL, Ensign DL, Bruns CM, and Pande VS. Accelerating molecular dynamic simulations on graphics processing units. 
+  J. Comput. Chem. 30:864, 2009.
+  http://dx.doi.org/10.1002/jcc.21209
   
   Eastman P and Pande VS. OpenMM: A hardware-independent framework for molecular simulations. 
-  Comput. Sci. Eng. 12:34, 2010. DOI: 10.1109/MCSE.2010.27
+  Comput. Sci. Eng. 12:34, 2010.
+  http://dx.doi.org/10.1109/MCSE.2010.27
   
   Eastman P and Pande VS. Efficient nonbonded interactions for molecular dynamics on a graphics processing unit. 
-  J. Comput. Chem. 31:1268, 2010. DOI: 10.1002/jcc.21413
+  J. Comput. Chem. 31:1268, 2010. 
+  http://dx.doi.org/10.1002/jcc.21413
   
   Eastman P and Pande VS. Constant constraint matrix approximation: A robust, parallelizable constraint method for molecular simulations. 
-  J. Chem. Theor. Comput. 6:434, 2010. DOI: 10.1021/ct900463w
+  J. Chem. Theor. Comput. 6:434, 2010.
+  http://dx.doi.org/10.1021/ct900463w
 
 * Replica-exchange with Gibbs sampling
   
   Chodera JD and Shirts MR. Replica exchange and expanded ensemble simulations as Gibbs sampling: Simple improvements for enhanced mixing. 
-  J. Chem. Phys., in press. arXiv: 1105.5749
+  J. Chem. Phys. 135:19410, 2011.
+  http://dx.doi.org/10.1063/1.3660669
 
 * MBAR for estimation of free energies from simulation data
 
-  Shirts MR and Chodera JD. Statistically optimal analysis of samples from multiple equilibrium states. J. Chem. Phys. 129:124105, 2008. DOI: 10.1063/1.2978177
+  Shirts MR and Chodera JD. Statistically optimal analysis of samples from multiple equilibrium states. 
+  J. Chem. Phys. 129:124105, 2008.
+  http://dx.doi.org/10.1063/1.2978177
 
