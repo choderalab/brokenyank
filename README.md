@@ -1,7 +1,14 @@
 yank
 ====
 
-YANK: GPU-accelerated calculation of ligand binding affinities
+YANK: GPU-accelerated calculation of ligand binding affinities in implicit and explicit solvent using alchemical free energy methodologies.
+
+Description
+-----------
+
+YANK uses a sophisticated set of algorithms to rigorously compute (within a classical statistical mechanical framework) biomolecular ligand binding free energies.  This is accomplished by performing an *alchemical free energy calculation* in either implicit or explicit solvent, in which the interactions between a ligand (usually a small molecule or peptide) are decoupled in a number of *alchemical intermediates* whose interactions with the environment are modified, creating an alternative thermodynamic cycle to the direct dissociation of ligand and target biomolecule.  The free energy of decoupling the ligand from the environment is computed both in the presence and absence of the biomolecular target, yielding the overall binding free energy (in the strong single-binding-mode framework of Gilson et al.) once a standard state correction is applied to correct for the restraint added between ligand and biomolecule in the complex.
+
+Computation of the free energy for each leg of the thermodynamic cycle utilized a modified replica-exchange simulations in which exchanges between alchemical states are permitted (Hamiltonian exchange) and faster mixing is achieved by using a Gibbs sampling framework.
 
 Authors
 -------
@@ -64,20 +71,20 @@ For example, to use EPD 7.1-2 on OS X with OpenEye's latest toolkit, install Ope
 Running YANK from the command line
 ----------------------------------
 
-    python yank.py --ligand_prmtop PRMTOP --receptor_prmtop PRMTOP { {--ligand_crd CRD | --ligand_mol2 MOL2} {--receptor_crd CRD | --receptor_pdb PDB} | {--complex_crd CRD | --complex_pdb PDB} } [-v | --verbose] [-i | --iterations ITERATIONS] [-o | --online] [-m | --mpi] [--restraints restraint-type]
+    python yank.py --ligand_prmtop PRMTOP --receptor_prmtop PRMTOP --complex_prmtop PRMTOP { {--ligand_crd CRD | --ligand_mol2 MOL2} {--receptor_crd CRD | --receptor_pdb PDB} | {--complex_crd CRD | --complex_pdb PDB} } [-v | --verbose] [-i | --iterations ITERATIONS] [-o | --online] [-m | --mpi] [--restraints restraint-type]
 
 EXAMPLES:
 
 Serial execution:
 
     # Specify AMBER prmtop/crd files for ligand and receptor.
-    python yank.py --ligand_prmtop ligand.prmtop --receptor_prmtop receptor.prmtop --ligand_crd ligand.crd --receptor_crd receptor.crd --iterations 1000
+    python yank.py --ligand_prmtop ligand.prmtop --receptor_prmtop receptor.prmtop --complex_prmtop complex.prmtop --ligand_crd ligand.crd --receptor_crd receptor.crd --iterations 1000
 
     # Specify (potentially multi-conformer) mol2 file for ligand and (potentially multi-model) PDB file for receptor.
-    python yank.py --ligand_prmtop ligand.prmtop --receptor_prmtop receptor.prmtop --ligand_mol2 ligand.mol2 --receptor_pdb receptor.pdb --iterations 1000
+    python yank.py --ligand_prmtop ligand.prmtop --receptor_prmtop receptor.prmtop --complex_prmtop complex.prmtop --ligand_mol2 ligand.mol2 --receptor_pdb receptor.pdb --iterations 1000
 
     # Specify (potentially multi-model) PDB file for complex, along with flat-bottom restraints (instead of harmonic).
-    python yank.py --ligand_prmtop ligand.prmtop --receptor_prmtop receptor.prmtop --complex_pdb complex.pdb --iterations 1000 --restraints flat-bottom
+    python yank.py --ligand_prmtop ligand.prmtop --receptor_prmtop receptor.prmtop --complex_prmtop complex.prmtop --complex_pdb complex.pdb --iterations 1000 --restraints flat-bottom
 
 MPI execution:
 
@@ -94,6 +101,25 @@ Only implicit solvent calculations are supported now.
 
 Use the testrun.sh script as an example for serial execution, and the mvapich2.pbs script as an example of MPI execution (can be run with batch or interactive queues).
 
+Using the YANK module from Python
+---------------------------------
+
+YANK can also be used as a module from another Python program.  See the command-line driver in '__main__' in yank.py as an example:
+
+    # Import the YANK module:
+    from yank import Yank
+
+    # Initialize YANK object using OpenMM System objects and coordinates.
+    yank = Yank(receptor=receptor_system, ligand=ligand_system, complex=complex_system, complex_coordinates=complex_coordinates, output_directory=output_directory, verbose=verbose)
+
+    # Run the YANK simulation using serial execution; use run_mpi() method for MPI execution.
+    yank.run()
+
+    # Analyze results.
+    results = yank.analyze()
+
+Note that the analysis routines can also be run asynchronously as the YANK object is running. 
+
 Testing
 -------
 
@@ -101,19 +127,24 @@ Three levels of testing frameworks are provided:
 
 * doctests
 
-Doctests ensure that each of the individual functions that compose YANK run on valid data without throwing exceptions.  These are implemented in the __main__ part of
-each module in YANK (e.g. 'repex.py'), and are regularly run to ensure that there is no invalid code in YANK.
+Doctests ensure that each of the individual functions that compose YANK run on valid data without throwing exceptions.  These are implemented in the '__main__' part of each module in YANK (e.g. 'repex.py'), and are regularly run to ensure that there is no invalid code in YANK.
 
 * module tests
 
-Module tests test that the code contained in the corresponding module (e.g. 'test_repex.py' for 'repex.py') generates the correct results for analytically-tractable
-test cases.  This code ensures the correctness of individual components of YANK.  Though it is impossible to test every conceivable input combination, some care is
-taken to ensure overall correctness of recommended codepaths.
+Module tests test that the code contained in the corresponding module (e.g. 'test_repex.py' for 'repex.py') generates the correct results for analytically-tractable test cases.  This code ensures the correctness of individual components of YANK.  Though it is impossible to test every conceivable input combination, some care is taken to ensure overall correctness of recommended codepaths.
 
 * integration tests
 
-Integration tests ensure that the whole of YANK run on certain test problems produce reliable free energy differences for well-characterized systems.
-Integration tests are run from the provided 'integration_tests.py' script.
+Integration tests ensure that the whole of YANK run on certain test problems produce reliable free energy differences for well-characterized systems (such as harmonic oscillators, Lennard-Jones particles, etc.).  Integration tests are run from the provided 'integration_tests.py' script.
+
+TODO
+----
+
+- [ ] Remove dependence on deprecated pyopenmm pure-Python wrapper; require System objects for complex, ligand, and protein instead.
+- [ ] Add support for asynchronous execution of Yank.run() 
+- [ ] Add support for on-the-fly analysis thread(s)
+- [ ] Speed up initialization and resuming runs
+- [ ] Change atom ordering so ligand is first, protein second, and solvent third.
 
 Roadmap
 -------
