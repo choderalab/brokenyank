@@ -28,6 +28,9 @@ Prerequisites
 
 Use of this module requires the following
 
+* AmberTools (for setting up protein-ligand systems):
+  http://ambermd.org/#AmberTools
+
 * OpenMM with Python wrappers: 
   http://simtk.org/home/openmm
 
@@ -53,8 +56,8 @@ Use of this module requires the following
 * OpenEye toolkit and Python wrappers (if mol2 and PDB reading features are used ;requires academic or commercial license):
   http://www.eyesopen.com
 
-Simplified prerequisite installation
-------------------------------------
+Simplified Python module installation
+-------------------------------------
 
 The Enthought Python Distribution (EPD) provides many of these prerequisites (including Python, NetCDF 4, HDF5, netcdf4-python, numpy, and scipy): http://www.enthought.com/products/epd.php
 
@@ -93,11 +96,14 @@ MPI execution:
 Notes
 -----
 
-In atom ordering in prmtop/crd files, receptor atoms must come before ligand atoms.
+Currently, YANK only accepts AMBER "new style" `prmtop` topology files to define molecular systems.
+For examples of how to set up your own systems using the free AmberTools suite, see the examples/ directory.
+
+In these AMBER `prmtop` and `inpcrd` files, receptor atoms must come before ligand atoms.
 Atom orderings must be the same in all files (AMBER prmtop/crd, PDB, mol2).
 mol2 files must contain only copies of the same molecule in different geometries.
 
-Only implicit solvent calculations are supported now.
+Free energy calculations in both implicit and explicit solvent are supported.  The presence of water is automatically detected.
 
 Use the testrun.sh script as an example for serial execution, and the mvapich2.pbs script as an example of MPI execution (can be run with batch or interactive queues).
 
