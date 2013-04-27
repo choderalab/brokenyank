@@ -56,8 +56,8 @@ Use of this module requires the following
 * OpenEye toolkit and Python wrappers (if mol2 and PDB reading features are used ;requires academic or commercial license):
   http://www.eyesopen.com
 
-Simplified Python module installation
--------------------------------------
+Simplified Python prerequisite installation
+-------------------------------------------
 
 The Enthought Python Distribution (EPD) provides many of these prerequisites (including Python, NetCDF 4, HDF5, netcdf4-python, numpy, and scipy): http://www.enthought.com/products/epd.php
 
@@ -241,4 +241,10 @@ Please cite the following papers if you use YANK for a publication:
   Shirts MR and Chodera JD. Statistically optimal analysis of samples from multiple equilibrium states. 
   J. Chem. Phys. 129:124105, 2008.
   http://dx.doi.org/10.1063/1.2978177
+
+* Long-range dispsersion corrections for explicit solvent free energy calculations
+
+  Shirts MR, Mobley DL, Chodera JD, and Pande VS. Accurate and efficient corrections or missing dispersion interactions in molecular simulations.
+  J. Phys. Chem. 111:13052, 2007.
+  http://dx.doi.org/10.1021/jp0735987
 
