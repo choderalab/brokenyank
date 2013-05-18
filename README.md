@@ -143,6 +143,12 @@ Module tests test that the code contained in the corresponding module (e.g. 'tes
 
 Integration tests ensure that the whole of YANK run on certain test problems produce reliable free energy differences for well-characterized systems (such as harmonic oscillators, Lennard-Jones particles, etc.).  Integration tests are run from the provided 'integration_tests.py' script.
 
+Known Issues
+------------
+
+* Running the MPI version of YANK with certain MPI implementations (mpich2 with hydra in particular) appears to hang in 'nvcc' if the CUDA platform is used.  The OpenCL platform seems to be unaffected.
+* The CUDA 5.0 runtime on Linux platforms appears to allocate an enormous amount (tens of GB) of virtual memory that is not used.  This is a known bug in the CUDA runtime and is expected to be rectified in CUDA 5.5.
+
 TODO
 ----
 
