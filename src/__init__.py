@@ -1,7 +1,7 @@
 #!/usr/local/bin/env python
 
 """
-YANK, a package for alchemical free energy calculations using OpenMM.
+YANK, a package for alchemical free energy calculations using OpenMM
 
 """
 
