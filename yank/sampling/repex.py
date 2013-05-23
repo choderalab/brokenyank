@@ -502,7 +502,9 @@ class ReplicaExchange(object):
                 except Exception as e:
                     print e
             print "Note %d / %d: Context creation done.  Waiting for MPI barrier..." % (self.mpicomm.rank, self.mpicomm.size) # DEBUG
-                    if self.platform.getName() == 'CUDA': print "Node %d state %d: platform %s device %s failure: %s" % (self.mpicomm.rank, state_index, self.platform, self.platform.getPropertyDefaultValue("CudaDeviceIndex"), str(e))
+            if self.platform.getName() == 'CUDA':
+                pass  # KAB: Note sure what to do here: the following line leads to an error because there is no exception 'e' at this part of the code.
+                #print "Node %d state %d: platform %s device %s failure: %s" % (self.mpicomm.rank, state_index, self.platform, self.platform.getPropertyDefaultValue("CudaDeviceIndex"), str(e))
             self.mpicomm.barrier()
             print "Barrier complete." # DEBUG
         else:
@@ -1735,12 +1737,12 @@ class ReplicaExchange(object):
                 u_kln[state_index,:,iteration] = u_nkl_replica[iteration,replica_index,:]
 
         # Determine optimal equilibration time, statistical inefficiency, and effectively uncorrelated sample indices.
-        import timeseries
+        import yank.analysis.timeseries as timeseries
         [equilibration_end, g, Neff_max, indices] = timeseries.detectEquilibration(u_n)
         N_k = indices.size * numpy.ones([nstates], numpy.int32)
 
         # Next, analyze with pymbar, initializing with last estimate of free energies.
-        import pymbar
+        import yank.analysis.pymbar as pymbar
         if hasattr(self, 'f_k'):
             mbar = pymbar.MBAR(u_kln[:,:,indices], N_k, f_k_initial=self.f_k)
         else:

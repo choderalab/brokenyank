@@ -8,6 +8,6 @@ setup(name='YANK',
       author='John Chodera',
       author_email='jchodera@gmail.com',
       url='https://github.com/choderalab/yank',
-      packages=['yank'],
+      packages=['yank', 'yank.alchemy', 'yank.analysis', 'yank.experimental', 'yank.pyopenmm', 'yank.restraints', 'yank.sampling', 'yank.test'],
      )
 
