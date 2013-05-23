@@ -236,6 +236,10 @@ Please cite the following papers if you use YANK for a publication:
   J. Chem. Theor. Comput. 6:434, 2010.
   http://dx.doi.org/10.1021/ct900463w
 
+  Eastman P, Friedrichs M, Chodera JD, Radmer RJ, Bruns CM, Ku JP, Beauchamp KA, Lane TJ, Wang LP, Shukla D, Tye T, Houston M, Stich T, Klein C, Shirts M, and Pande VS.  OpenMM 4: A Reusable, Extensible, 
+  Hardware Independent Library for High Performance Molecular Simulation. J. Chem. Theor. Comput. 2012.  
+  http://dx.doi.org/10.1021/ct300857j
+
 * Replica-exchange with Gibbs sampling
   
   Chodera JD and Shirts MR. Replica exchange and expanded ensemble simulations as Gibbs sampling: Simple improvements for enhanced mixing. 

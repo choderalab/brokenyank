@@ -26,7 +26,7 @@ file = tempfile.NamedTemporaryFile() # use a temporary file for testing -- you w
 
 # Select platform: one of 'Reference' (CPU-only), 'Cuda' (NVIDIA Cuda), or 'OpenCL' (for OS X 10.6 with OpenCL OpenMM compiled)
 platform = simtk.openmm.Platform.getPlatformByName("OpenCL")    
-platform = simtk.openmm.Platform.getPlatformByName("Cuda")    
+platform = simtk.openmm.Platform.getPlatformByName("CUDA")    
 
 # Set up device to bind to.
 print "Selecting MPI communicator and selecting a GPU device..."
