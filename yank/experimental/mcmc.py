@@ -370,7 +370,8 @@ class HybridMonteCarloMove(MarkovChainMonteCarloMove):
         context.setVelocities(velocities)
 
         # Compute initial total energy.
-        total_energy = 
+        total_energy = np.nan
+        raise(Exception("There was a syntax error checked in here.  KAB May23, 2013."))
         
         # Run dynamics.
         integrator.step(self.number_of_steps_per_iteration)
@@ -517,10 +518,10 @@ class MonteCarloVolumeMove(MarkovChainMonteCarloMove):
             state.system.setPeriodicBoxVectors(a * scale_factor, b * scale_factor, c * scale_factor)
 
             # Scale atomic positions.
-            if self.scaling_method = 'atomic':
+            if self.scaling_method == 'atomic':
                 positions = old_positions * scale_factor
                 nscale = state.system.natoms # number of atoms
-            elif self.scaling_method = 'molecular':
+            elif self.scaling_method == 'molecular':
                 for molecule in state.system.iterateMolecules():
                     com = old_positions[molecule.atom_indices].mean() # center of mass position
                     translation = com * (scale_factor - 1.0) # translation shift to apply to all molecular coordinates
@@ -638,6 +639,7 @@ class ProtonationStateMove(MarkovChainMonteCarloMove):
 
         # Make several attempts to change protonation state.
         for attempt in range(self.nattempts):
+            pass
             
         # Each attempt requires we change the *charges* in the system    
         # Use state.reduced_potential() to compute the reduced potential after a modification attempt.        
