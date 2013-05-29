@@ -6,7 +6,7 @@ import numpy
 import sys
 import os
 
-from repex import ReplicaExchange
+from yank.sampling.repex import ReplicaExchange
 
 # Create test system.
 print "Creating test systems..."
@@ -19,13 +19,13 @@ nreplicas = 6 # number of temperature replicas
 T_min = 298.0 * units.kelvin # minimum temperature
 T_max = 600.0 * units.kelvin # maximum temperature
 T_i = [ T_min + (T_max - T_min) * (math.exp(float(i) / float(nreplicas-1)) - 1.0) / (math.e - 1.0) for i in range(nreplicas) ]
-from thermodynamics import ThermodynamicState
+from yank.sampling.thermodynamics import ThermodynamicState
 states = [ ThermodynamicState(system=system, temperature=T_i[i]) for i in range(nreplicas) ]
 import tempfile
 file = tempfile.NamedTemporaryFile() # use a temporary file for testing -- you will want to keep this file, since it stores output and checkpoint data
 
 # Select platform: one of 'Reference' (CPU-only), 'Cuda' (NVIDIA Cuda), or 'OpenCL' (for OS X 10.6 with OpenCL OpenMM compiled)
-platform = simtk.openmm.Platform.getPlatformByName("OpenCL")    
+#platform = simtk.openmm.Platform.getPlatformByName("OpenCL")    
 platform = simtk.openmm.Platform.getPlatformByName("CUDA")    
 
 # Set up device to bind to.
