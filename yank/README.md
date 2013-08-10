@@ -5,9 +5,10 @@ Manifest
 --------
 
 * `yank.py` - YANK main module and driver script
-* `restraints/` - tools for imposing restraints
-* `pyopenmm/` - Pythonic extensions to OpenMM
+* `restraints.py` - tools for imposing restraints
 * `alchemy/` - tools for generating alchemically-modified systems
 * `sampling/` - tools for sampling statistical ensembles
-* `analysis/` - tools for analyzing alchemical free energy calculations
-* `test/` - test systems, module tests, and integration tests
+* `analyze.py` - tools for analyzing alchemical free energy calculations
+* `testsystems.py` - test systems
+* `data/` - data for test systems
+* `experimental/` - experimental code

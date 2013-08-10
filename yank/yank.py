@@ -850,7 +850,7 @@ class Yank(object):
 
         """
 
-        import analyze
+        import analysis
         import pymbar
         import timeseries
         import netCDF4 as netcdf
