@@ -894,7 +894,7 @@ def WaterBox(constrain=True, flexible=True, cutoff=None, mm=None, nonbonded_meth
 
     # Construct filename
     if filename is None:
-        filename = os.path.join(os.getenv('PYOPENMM_SOURCE_DIR'), 'test', 'additional-tests', 'systems', 'waterbox', 'watbox216.pdb')    
+        filename = os.path.join(os.path.dirname(__file__), 'data', 'waterbox', 'watbox216.pdb')    
     
     # Partial atomic charges for water
     massO  = 16.0 * units.amu
@@ -1064,8 +1064,8 @@ def AlanineDipeptideImplicit(mm=None, flexibleConstraints=True, shake='h-bonds')
 
     # Determine prmtop and crd filenames in test directory.
     # TODO: This will need to be revised in order to be able to find the test systems.
-    prmtop_filename = os.path.join(os.getenv('PYOPENMM_SOURCE_DIR'), 'test', 'additional-tests', 'systems', 'alanine-dipeptide-gbsa', 'alanine-dipeptide.prmtop')
-    crd_filename = os.path.join(os.getenv('PYOPENMM_SOURCE_DIR'), 'test', 'additional-tests', 'systems', 'alanine-dipeptide-gbsa', 'alanine-dipeptide.crd')
+    prmtop_filename = os.path.join(os.path.dirname(__file__), 'data', 'alanine-dipeptide-gbsa', 'alanine-dipeptide.prmtop')
+    crd_filename = os.path.join(os.path.dirname(__file__), 'data', 'alanine-dipeptide-gbsa', 'alanine-dipeptide.crd')
 
     # Initialize system.
     import simtk.openmm.app as app
@@ -1107,8 +1107,8 @@ def AlanineDipeptideExplicit(mm=None, flexibleConstraints=True, shake='h-bonds',
 
     # Determine prmtop and crd filenames in test directory.
     # TODO: This will need to be revised in order to be able to find the test systems.
-    prmtop_filename = os.path.join(os.getenv('PYOPENMM_SOURCE_DIR'), 'test', 'additional-tests', 'systems', 'alanine-dipeptide-explicit', 'alanine-dipeptide.prmtop')
-    crd_filename = os.path.join(os.getenv('PYOPENMM_SOURCE_DIR'), 'test', 'additional-tests', 'systems', 'alanine-dipeptide-explicit', 'alanine-dipeptide.crd')
+    prmtop_filename = os.path.join(os.path.dirname(__file__), 'data', 'alanine-dipeptide-explicit', 'alanine-dipeptide.prmtop')
+    crd_filename = os.path.join(os.path.dirname(__file__), 'data', 'alanine-dipeptide-explicit', 'alanine-dipeptide.crd')
 
     # Initialize system.
     import simtk.openmm.app as app
@@ -1149,8 +1149,8 @@ def LysozymeImplicit(mm=None, flexibleConstraints=True, shake='h-bonds'):
 
     # Determine prmtop and crd filenames in test directory.
     # TODO: This will need to be revised in order to be able to find the test systems.
-    prmtop_filename = os.path.join(os.getenv('PYOPENMM_SOURCE_DIR'), 'test', 'additional-tests', 'systems', 'T4-lysozyme-L99A-implicit', 'complex.prmtop')
-    crd_filename = os.path.join(os.getenv('PYOPENMM_SOURCE_DIR'), 'test', 'additional-tests', 'systems', 'T4-lysozyme-L99A-implicit', 'complex.crd')
+    prmtop_filename = os.path.join(os.path.dirname(__file__), 'data',  'T4-lysozyme-L99A-implicit', 'complex.prmtop')
+    crd_filename = os.path.join(os.path.dirname(__file__), 'data',  'T4-lysozyme-L99A-implicit', 'complex.crd')
 
     # Initialize system.
     import simtk.openmm.app as app
@@ -1185,7 +1185,7 @@ def SrcImplicit(mm=None):
 
     # Determine prmtop and crd filenames in test directory.
     # TODO: This will need to be revised in order to be able to find the test systems.
-    pdb_filename = os.path.join(os.getenv('PYOPENMM_SOURCE_DIR'), 'test', 'additional-tests', 'systems', 'src-implicit', 'implicit-refined.pdb')
+    pdb_filename = os.path.join(os.path.dirname(__file__), 'data',  'src-implicit', 'implicit-refined.pdb')
 
     # Read PDB.
     import simtk.openmm.app as app
@@ -1223,8 +1223,8 @@ def SrcExplicit(mm=None):
 
     # Determine prmtop and crd filenames in test directory.
     # TODO: This will need to be revised in order to be able to find the test systems.
-    system_xml_filename = os.path.join(os.getenv('PYOPENMM_SOURCE_DIR'), 'test', 'additional-tests', 'systems', 'src-explicit', 'system.xml')
-    state_xml_filename = os.path.join(os.getenv('PYOPENMM_SOURCE_DIR'), 'test', 'additional-tests', 'systems', 'src-explicit', 'state.xml')
+    system_xml_filename = os.path.join(os.path.dirname(__file__), 'data',  'src-explicit', 'system.xml')
+    state_xml_filename = os.path.join(os.path.dirname(__file__), 'data',  'src-explicit', 'state.xml')
 
     # Read system.
     infile = open(system_xml_filename, 'r')
@@ -1273,8 +1273,8 @@ def MethanolBox(mm=None, flexibleConstraints=True, shake='h-bonds', nonbondedCut
     # Determine prmtop and crd filenames in test directory.
     # TODO: This will need to be revised in order to be able to find the test systems.
     system_name = 'methanol-box'
-    prmtop_filename = os.path.join(os.getenv('PYOPENMM_SOURCE_DIR'), 'test', 'additional-tests', 'systems', system_name, system_name + '.prmtop')
-    crd_filename = os.path.join(os.getenv('PYOPENMM_SOURCE_DIR'), 'test', 'additional-tests', 'systems', system_name, system_name + '.crd')
+    prmtop_filename = os.path.join(os.path.dirname(__file__), 'data',  system_name, system_name + '.prmtop')
+    crd_filename = os.path.join(os.path.dirname(__file__), 'data',  system_name, system_name + '.crd')
 
     # Initialize system.
     import simtk.openmm.app as app
@@ -1323,8 +1323,8 @@ def MolecularIdealGas(mm=None, flexibleConstraints=True, shake=None, nonbondedCu
     # Determine prmtop and crd filenames in test directory.
     # TODO: This will need to be revised in order to be able to find the test systems.
     system_name = 'methanol-box'
-    prmtop_filename = os.path.join(os.getenv('PYOPENMM_SOURCE_DIR'), 'test', 'additional-tests', 'systems', system_name, system_name + '.prmtop')
-    crd_filename = os.path.join(os.getenv('PYOPENMM_SOURCE_DIR'), 'test', 'additional-tests', 'systems', system_name, system_name + '.crd')
+    prmtop_filename = os.path.join(os.path.dirname(__file__), 'data', system_name, system_name + '.prmtop')
+    crd_filename = os.path.join(os.path.dirname(__file__), 'data', system_name, system_name + '.crd')
 
     # Initialize system.
     import simtk.openmm.app as app
