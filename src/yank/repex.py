@@ -493,12 +493,8 @@ class ReplicaExchange(object):
                         state._context = self.mm.Context(state.system, state._integrator, self.platform)
                     else:
                         state._context = self.mm.Context(state.system, state._integrator)                    
-                    if self.platform.getName() == 'CUDA': print "Node %d state %d: platform name %s device requested %s actual %s success" % (self.mpicomm.rank, state_index, self.platform.getName(), self.platform.getPropertyDefaultValue("OpenCLDeviceIndex"), state._context.getPlatform().getPropertyValue(state._context, "CudaDeviceIndex"))      
                 except Exception as e:
                     print e
-            if self.platform.getName() == 'CUDA':
-                pass  # KAB: Note sure what to do here: the following line leads to an error because there is no exception 'e' at this part of the code.
-                #print "Node %d state %d: platform %s device %s failure: %s" % (self.mpicomm.rank, state_index, self.platform, self.platform.getPropertyDefaultValue("CudaDeviceIndex"), str(e))
             self.mpicomm.barrier()
         else:
             # Serial version.
@@ -1920,7 +1916,10 @@ class ParallelTempering(ReplicaExchange):
             # Create an integrator and context.
             state = self.states[0]
             integrator = self.mm.VerletIntegrator(self.timestep)
-            context = self.mm.Context(state.system, integrator, self.platform)
+            if self.platform:
+                context = self.mm.Context(state.system, integrator, self.platform)
+            else:
+                context = self.mm.Context(state.system, integrator)
 
             for replica_index in range(self.mpicomm.rank, self.nstates, self.mpicomm.size):
                 # Set coordinates.
@@ -1952,8 +1951,11 @@ class ParallelTempering(ReplicaExchange):
             # Create an integrator and context.
             state = self.states[0]
             integrator = self.mm.VerletIntegrator(self.timestep)
-            context = self.mm.Context(state.system, integrator, self.platform)
-        
+            if self.platform:
+                context = self.mm.Context(state.system, integrator, self.platform)
+            else:
+                context = self.mm.Context(state.system, integrator)
+
             # Compute reduced potentials for all configurations in all states.
             for replica_index in range(self.nstates):
                 # Set coordinates.
