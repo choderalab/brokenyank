@@ -10,4 +10,4 @@ Manifest
 * `alchemy/` - tools for generating alchemically-modified systems
 * `sampling/` - tools for sampling statistical ensembles
 * `analysis/` - tools for analyzing alchemical free energy calculations
-
+* `test/` - test systems, module tests, and integration tests
