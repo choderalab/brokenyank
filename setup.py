@@ -38,7 +38,7 @@ def buildKeywordDictionary():
 
     keywords['packages'] = ['yank']
     keywords['data_files'] = []
-    keywords['package_data'] = {'yank' : ['data/*']}
+    keywords['package_data'] = {'yank' : ['data/*/*']}
     keywords['platforms'] = ['Linux', 'Mac OS X', 'Windows']
     keywords['description'] = "A framework for alchemical free energy calculations"
     keywords['long_description'] = """\
