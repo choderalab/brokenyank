@@ -25,7 +25,8 @@ def buildKeywordDictionary():
     keywords['url'] = 'http://github.com/choderalab/yank'
     keywords['download_url'] = 'http://github.com/choderalab/yank'
 
-    keywords['install_requires'] = ['simtk.openmm', 'simtk.unit']
+    keywords['requires'] = ['OpenMM (>=5.2)']
+
     keywords['dependency_links'] = 
 
     keywords['classifiers'] = ['Development Status :: 4 - Beta',
@@ -43,7 +44,8 @@ def buildKeywordDictionary():
     keywords['long_description'] = """\
 YANK is a framework for experimenting with GPU-accelerated alchemical free energy calculations.
 """
-    
+    keywords['scripts'] = ['tools/analyze.py', 'tools/analyzeall.py', 'yank/yank.py']
+
     return keywords
     
 def main():
