@@ -198,7 +198,7 @@ class ReplicaExchange(object):
     (This is just an illustrative example; use ParallelTempering class for actual production parallel tempering simulations.)
     
     >>> # Create test system.
-    >>> import simtk.pyopenmm.extras.testsystems as testsystems
+    >>> import testsystems
     >>> [system, coordinates] = testsystems.AlanineDipeptideImplicit()
     >>> # Create thermodynamic states for parallel tempering with exponentially-spaced schedule.
     >>> import simtk.unit as units
@@ -302,7 +302,7 @@ class ReplicaExchange(object):
         states_restored = False 
         options_restored = False
         if self.resume: 
-            print "Attempting to resume by reading thermodynamic states and options..." # DEBUG
+            if self.verbose: print "Attempting to resume by reading thermodynamic states and options..." 
             ncfile = netcdf.Dataset(self.store_filename, 'r')            
             states_restored = self._restore_thermodynamic_states(ncfile)
             options_restored = self._restore_options(ncfile)
@@ -485,40 +485,31 @@ class ReplicaExchange(object):
         if self.mpicomm:
             # Create cached contexts for only the states this process will handle.
             for state_index in range(self.mpicomm.rank, self.nstates, self.mpicomm.size):
-                print "Node %d / %d creating Context for state %d..." % (self.mpicomm.rank, self.mpicomm.size, state_index) # DEBUG
                 state = self.states[state_index]
                 try:
                     state._integrator = self.mm.LangevinIntegrator(state.temperature, self.collision_rate, self.timestep)                    
                     state._integrator.setRandomNumberSeed(seed + self.mpicomm.rank) 
-                    initial_context_time = time.time() # DEBUG
                     if self.platform:
-                        print "Node %d / %d: Using platform %s" % (self.mpicomm.rank, self.mpicomm.size, self.platform.getName())
                         state._context = self.mm.Context(state.system, state._integrator, self.platform)
                     else:
-                        print "Node %d / %d: No platform specified." % (self.mpicomm.rank, self.mpicomm.size)
                         state._context = self.mm.Context(state.system, state._integrator)                    
-                    print "Node %d / %d: Context creation took %.3f s" % (self.mpicomm.rank, self.mpicomm.size, time.time() - initial_context_time) # DEBUG
                     if self.platform.getName() == 'CUDA': print "Node %d state %d: platform name %s device requested %s actual %s success" % (self.mpicomm.rank, state_index, self.platform.getName(), self.platform.getPropertyDefaultValue("OpenCLDeviceIndex"), state._context.getPlatform().getPropertyValue(state._context, "CudaDeviceIndex"))      
                 except Exception as e:
                     print e
-            print "Note %d / %d: Context creation done.  Waiting for MPI barrier..." % (self.mpicomm.rank, self.mpicomm.size) # DEBUG
             if self.platform.getName() == 'CUDA':
                 pass  # KAB: Note sure what to do here: the following line leads to an error because there is no exception 'e' at this part of the code.
                 #print "Node %d state %d: platform %s device %s failure: %s" % (self.mpicomm.rank, state_index, self.platform, self.platform.getPropertyDefaultValue("CudaDeviceIndex"), str(e))
             self.mpicomm.barrier()
-            print "Barrier complete." # DEBUG
         else:
             # Serial version.
             for (state_index, state) in enumerate(self.states):  
                 if self.verbose: print "Creating Context for state %d..." % state_index
                 state._integrator = self.mm.LangevinIntegrator(state.temperature, self.collision_rate, self.timestep)
                 state._integrator.setRandomNumberSeed(seed)
-                initial_context_time = time.time() # DEBUG
                 if self.platform:
                     state._context = self.mm.Context(state.system, state._integrator, self.platform)
                 else:
                     state._context = self.mm.Context(state.system, state._integrator)
-                print "Context creation took %.3f s" % (time.time() - initial_context_time) # DEBUG            
         final_time = time.time()
         elapsed_time = final_time - initial_time
         if self.verbose: print "%.3f s elapsed." % elapsed_time
@@ -735,7 +726,6 @@ class ReplicaExchange(object):
         replica_lookup = dict( (self.replica_states[replica_index], replica_index) for replica_index in range(self.nstates) ) # replica_lookup[state_index] is the replica index currently at state 'state_index' # Python 2.6 compatible
         replica_indices = [ replica_lookup[state_index] for state_index in range(self.mpicomm.rank, self.nstates, self.mpicomm.size) ] # list of replica indices for this node to propagate
         for replica_index in replica_indices:
-            if self.verbose: print "Node %3d/%3d propagating replica %3d state %3d..." % (self.mpicomm.rank, self.mpicomm.size, replica_index, self.replica_states[replica_index]) # DEBUG
             self._propagate_replica(replica_index)
         end_time = time.time()        
         elapsed_time = end_time - start_time
@@ -1695,12 +1685,9 @@ class ReplicaExchange(object):
         velocities = units.Quantity(numpy.sqrt(sigma2 / (velocity_unit**2)) * numpy.random.randn(natoms, 3), velocity_unit)
         
         # OLD (broken) CODE
+        # TODO: Submit bug report to determine why this does not work.
         #velocities = units.Quantity(numpy.sqrt(sigma2/sigma2.unit) * numpy.random.randn(natoms, 3), units.sqrt(sigma2.unit))
 
-        # DEBUG: Print kinetic energy.
-        #kinetic_energy = units.sum(units.sum(0.5 * masses * velocities**2)) 
-        #print kinetic_energy / units.kilocalories_per_mole
-    
         # Return velocities
         return velocities
 
@@ -1825,7 +1812,7 @@ class ParallelTempering(ReplicaExchange):
     Parallel tempering of alanine dipeptide in implicit solvent.
     
     >>> # Create alanine dipeptide test system.
-    >>> import simtk.pyopenmm.extras.testsystems as testsystems
+    >>> import testsystems
     >>> [system, coordinates] = testsystems.AlanineDipeptideImplicit()
     >>> # Create temporary file for storing output.
     >>> import tempfile
@@ -1846,7 +1833,7 @@ class ParallelTempering(ReplicaExchange):
     Parallel tempering of alanine dipeptide in explicit solvent at 1 atm.
     
     >>> # Create alanine dipeptide system
-    >>> import simtk.pyopenmm.extras.testsystems as testsystems
+    >>> import testsystems
     >>> [system, coordinates] = testsystems.AlanineDipeptideExplicit()
     >>> # Add Monte Carlo barsostat to system (must be same pressure as simulation).
     >>> import simtk.openmm as openmm
@@ -2007,7 +1994,7 @@ class HamiltonianExchange(ReplicaExchange):
     EXAMPLES
     
     >>> # Create reference system
-    >>> import simtk.pyopenmm.extras.testsystems as testsystems
+    >>> import testsystems
     >>> [reference_system, coordinates] = testsystems.AlanineDipeptideImplicit()
     >>> # Copy reference system.
     >>> systems = [reference_system for index in range(10)]

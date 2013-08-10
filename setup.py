@@ -37,6 +37,7 @@ def buildKeywordDictionary():
                                'Programming Language :: Python']
 
     keywords['packages'] = ['yank']
+    keywords['package_dir'] = { 'yank' : 'src/yank' }
     keywords['data_files'] = []
     keywords['package_data'] = {'yank' : ['data/*/*']}
     keywords['platforms'] = ['Linux', 'Mac OS X', 'Windows']
