@@ -67,12 +67,9 @@ import numpy.random
 import simtk.unit as units
 import simtk.openmm as openmm
 
-import pyopenmm
-
-#from enumerative_factories import AbsoluteAlchemicalFactory
 from alchemy import AbsoluteAlchemicalFactory
 from thermodynamics import ThermodynamicState
-from repex import HamiltonianExchange
+from repex import HamiltonianExchange, ReplicaExchange
 
 #=============================================================================================
 # Modified Hamiltonian exchange class.
@@ -91,7 +88,7 @@ class ModifiedHamiltonianExchange(HamiltonianExchange):
     EXAMPLES
     
     >>> # Create reference system.
-    >>> import simtk.pyopenmm.extras.testsystems as testsystems
+    >>> import testsystems
     >>> [reference_system, coordinates] = testsystems.AlanineDipeptideImplicit()
     >>> # Copy reference system.
     >>> systems = [reference_system for index in range(10)]
@@ -519,7 +516,7 @@ class Yank(object):
         self.complex_coordinates = copy.deepcopy(complex_coordinates)
 
         # Type of restraints requested.
-        self.restraint_type = 'harmonic' # default to a single harmonic restraint between the ligand and receptor
+        self.restraint_type = 'flat-bottom' # default to a single harmonic restraint between the ligand and receptor
 
         return
 
@@ -543,15 +540,15 @@ class Yank(object):
         self.protocol['number_of_iterations'] = self.niterations
         self.protocol['verbose'] = self.verbose
         self.protocol['timestep'] = 2.0 * units.femtoseconds
-        self.protocol['collision_rate'] = 9.1 / units.picoseconds
+        self.protocol['collision_rate'] = 0.5 / units.picoseconds
         self.protocol['minimize'] = True
         self.protocol['show_mixing_statistics'] = False # this causes slowdown with iteration and should not be used for production
 
         # DEBUG
-        self.protocol['number_of_equilibration_iterations'] = 0
-        self.protocol['minimize'] = False
-        self.protocol['minimize_maxIterations'] = 10 
-        self.protocol['show_mixing_statistics'] = True
+        #self.protocol['number_of_equilibration_iterations'] = 0
+        #self.protocol['minimize'] = False
+        self.protocol['minimize_maxIterations'] = 500
+        self.protocol['show_mixing_statistics'] = False
 
         return
 
@@ -593,7 +590,7 @@ class Yank(object):
         else:
             vacuum_simulation.platform = openmm.Platform.getPlatformByName('Reference')
         vacuum_simulation.nsteps_per_iteration = 500
-        #vacuum_simulation.run()
+        vacuum_simulation.run()
         
         # 
         # Set up ligand in solvent simulation.
@@ -607,7 +604,7 @@ class Yank(object):
         if self.platform:
             solvent_simulation.platform = self.platform
         solvent_simulation.nsteps_per_iteration = 500
-        #solvent_simulation.run()
+        solvent_simulation.run()
         
         #
         # Set up ligand in complex simulation.
@@ -649,7 +646,7 @@ class Yank(object):
             self.complex_coordinates = randomized_coordinates
 
         complex_simulation = ModifiedHamiltonianExchange(reference_state, systems, self.complex_coordinates, store_filename, displacement_sigma=self.displacement_sigma, mc_atoms=self.ligand_atoms, protocol=self.protocol, metadata=metadata)
-        complex_simulation.nsteps_per_iteration = 2500
+        complex_simulation.nsteps_per_iteration = 500
         if self.platform:
             complex_simulation.platform = self.platform
 
@@ -683,11 +680,11 @@ class Yank(object):
 
         # Specify which CPUs should be attached to specific GPUs for maximum performance.
         cpu_platform_name = 'Reference'
-        gpu_platform_name = 'CUDA' 
-        gpu_platform_name = 'OpenCL' # DEBUG
+        #gpu_platform_name = 'CUDA' # CUDA platform cannot currently be used due to NVCC hardcoded /tmp issue
+        gpu_platform_name = 'OpenCL'
         
         if not cpuid_gpuid_mapping:
-            # TODO: Determine number of GPUs and set up simple mapping.
+            # TODO: Determine number of GPUs (via CUDA_VISIBLE_DEVICES?) and set up simple mapping.
             cpuid_gpuid_mapping = { 0:0, 1:1, 2:2, 3:3 }
 
         # If number of CPUs per node not specified, set equal to total number of MPI processes.
@@ -744,9 +741,25 @@ class Yank(object):
             self.complex.addForce(force)
             self.standard_state_correction = restraints.getStandardStateCorrection() # standard state correction in kT
 
-        # Create alchemically perturbed systems.
-        factory = AbsoluteAlchemicalFactory(self.complex, ligand_atoms=self.ligand_atoms)
-        systems = factory.createPerturbedSystems(self.complex_protocol, verbose=self.verbose, mpicomm=MPI.COMM_WORLD)
+        # Create alchemically perturbed systems if not resuming run.
+        try:
+            # We can attempt to restore if serialized states exist.
+            # TODO: We probably don't need to check this.  
+            import time
+            initial_time = time.time()
+            store_filename = os.path.join(self.output_directory, 'complex.nc')
+            import netCDF4 as netcdf
+            ncfile = netcdf.Dataset(store_filename, 'r') 
+            ncvar_systems = ncfile.groups['thermodynamic_states'].variables['systems']
+            nsystems = ncvar_systems.shape[0]
+            ncfile.close()
+            systems = None
+            resume = True
+        except Exception as e:        
+            # Create states using alchemical factory.
+            factory = AbsoluteAlchemicalFactory(self.complex, ligand_atoms=self.ligand_atoms)
+            systems = factory.createPerturbedSystems(self.complex_protocol, verbose=self.verbose, mpicomm=MPI.COMM_WORLD)
+            resume = False
 
         if this_is_gpu_process:
             # Only GPU processes continue with complex simulation.
@@ -756,7 +769,7 @@ class Yank(object):
             metadata = dict()
             metadata['standard_state_correction'] = self.standard_state_correction
 
-            if self.randomize_ligand:
+            if self.randomize_ligand and not resume:
                 randomized_coordinates = list()
                 sigma = 20.0 * units.angstrom
                 close_cutoff = 1.5 * units.angstrom
@@ -770,14 +783,26 @@ class Yank(object):
             # Set up Hamiltonian exchange simulation.
             complex_simulation = ModifiedHamiltonianExchange(reference_state, systems, self.complex_coordinates, store_filename, displacement_sigma=self.displacement_sigma, mc_atoms=self.ligand_atoms, protocol=self.protocol, mpicomm=comm, metadata=metadata)
             complex_simulation.platform = platform
-            complex_simulation.nsteps_per_iteration = 2500
+            complex_simulation.nsteps_per_iteration = 1250
             complex_simulation.run()        
 
         else:
             print "Running on cpu (node %s, rank %d / %d)" % (hostname, MPI.COMM_WORLD.rank, MPI.COMM_WORLD.size)
-            # Run ligand in vacuum simulation on CPUs.            
+
             self.protocol['verbose'] = False # DEBUG: Suppress terminal output from ligand in solvent and vacuum simulations.
-            
+
+            # Run ligand in solvent simulation on CPUs.
+            # TODO: Have this run on GPUs if explicit solvent.
+
+            factory = AbsoluteAlchemicalFactory(self.ligand, ligand_atoms=range(self.ligand.getNumParticles()))
+            systems = factory.createPerturbedSystems(self.solvent_protocol)
+            store_filename = os.path.join(self.output_directory, 'solvent.nc')
+            solvent_simulation = ModifiedHamiltonianExchange(reference_state, systems, self.ligand_coordinates, store_filename, protocol=self.protocol, mpicomm=comm)
+            solvent_simulation.platform = openmm.Platform.getPlatformByName(cpu_platform_name)
+            solvent_simulation.nsteps_per_iteration = 500
+            solvent_simulation.run() 
+
+            # Run ligand in vacuum simulation on CPUs.                        
             # Remove any implicit solvation forces, if present.
             vacuum_ligand = pyopenmm.System(self.ligand)
             for force in vacuum_ligand.forces:
@@ -793,16 +818,6 @@ class Yank(object):
             vacuum_simulation.nsteps_per_iteration = 500
             vacuum_simulation.run() # DEBUG
         
-            # Run ligand in solvent simulation on CPUs.
-            # TODO: Have this run on GPUs if explicit solvent.
-
-            factory = AbsoluteAlchemicalFactory(self.ligand, ligand_atoms=range(self.ligand.getNumParticles()))
-            systems = factory.createPerturbedSystems(self.solvent_protocol)
-            store_filename = os.path.join(self.output_directory, 'solvent.nc')
-            solvent_simulation = ModifiedHamiltonianExchange(reference_state, systems, self.ligand_coordinates, store_filename, protocol=self.protocol, mpicomm=comm)
-            solvent_simulation.platform = openmm.Platform.getPlatformByName(cpu_platform_name)
-            solvent_simulation.nsteps_per_iteration = 500
-            solvent_simulation.run() # DEBUG
 
         # Wait for all nodes to finish.
         MPI.COMM_WORLD.barrier()
@@ -850,7 +865,7 @@ class Yank(object):
 
         """
 
-        import analysis
+        import analyze
         import pymbar
         import timeseries
         import netCDF4 as netcdf
@@ -1099,6 +1114,7 @@ if __name__ == '__main__':
     parser.add_option("--output", dest="output_directory", default=None, help="specify output directory---must be unique for each calculation (default: current directory)")
     parser.add_option("--doctests", action="store_true", dest="doctests", default=False, help="run doctests first (default: False)")
     parser.add_option("--randomize_ligand", action="store_true", dest="randomize_ligand", default=False, help="randomize ligand positions and orientations (default: False)")
+    parser.add_option("--ignore_signal", action="append", dest="ignore_signals", default=[], help="signals to trap and ignore (default: None)")
 
     # Parse command-line arguments.
     (options, args) = parser.parse_args()
@@ -1125,6 +1141,17 @@ if __name__ == '__main__':
     # DEBUG: Require complex prmtop files to be specified while JDC debugs automatic combination of systems.
     if not (options.complex_prmtop_filename):
         parser.error("Please specify --complex_prmtop [complex_prmtop_filename] argument.  JDC is still debugging automatic generation of complex topologies from receptor+ligand.")
+
+    # Ignore requested signals.
+    if len(options.ignore_signals) > 0:
+        import signal
+        # Create a dummy signal handler.
+        def signal_handler(signal, frame):
+            print 'Signal %s received and ignored.' % str(signal)
+        # Register the dummy signal handler.
+        for signal_name in options.ignore_signals:
+            print "Will ignore signal %s" % signal_name
+            signal.signal(getattr(signal, signal_name), signal_handler)
 
     # Initialize MPI if requested.
     if options.mpi:
@@ -1230,6 +1257,7 @@ if __name__ == '__main__':
 
     # cpuid:gpuid for Exxact 4xGPU nodes
     cpuid_gpuid_mapping = { 0:0, 1:1, 2:2, 3:3 } 
+    ncpus_per_node = None
 
     # Run calculation.
     if options.mpi:
