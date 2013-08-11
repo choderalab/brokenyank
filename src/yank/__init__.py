@@ -3,9 +3,14 @@ YANK, a package for alchemical free energy calculations using OpenMM
 
 """
 
-__version__ = "$Revision: $"
-# $Source$
+__author__ = "John D. Chodera"
+__license__ = "GPL"
+__maintainer__ = "John D. Chodera"
+__email__ = "jchodera@gmail.com"
+__version__ = "1.0beta"
 
-#__all__ = ['restraints', 'pyopenmm', 'alchemy', 'sampling', 'test', 'analysis']
-#from alchemy import *
+from yank import Yank
+import analysis
+
+__all__ = ['Yank', 'analysis']
 

@@ -471,25 +471,17 @@ class Yank(object):
         self.randomize_ligand = False
 
         # Create complex and store atom indices.
-        if complex is None:
-            # TODO: We need to strip out solvent from ligand system if it is solvated.
-            if verbose: print "Combining receptor and ligand systems..."
-            self.complex_pyopenmm = pyopenmm.System(self.receptor) + pyopenmm.System(self.ligand) # append ligand atoms to receptor atoms to form System object for complex
-            self.complex = self.complex_pyopenmm.asSwig()
-        else:
-            self.complex = copy.deepcopy(complex)
-            self.complex_pyopenmm = pyopenmm.System(self.complex)
+        self.complex = copy.deepcopy(complex)
 
         # Set up output directory.
         if output_directory is None:
             output_directory = os.getcwd()
         self.output_directory = output_directory
 
-        # DEBUG
-        #if self.verbose: print "receptor has %d atoms; ligand has %d atoms" % (self.receptor.getNumParticles(), self.ligand.getNumParticles())
-
         # Determine whether system is periodic.
-        self.is_periodic = self.complex_pyopenmm.is_periodic
+        nonbonded_forces = [ force for force in system.getForces() if isinstance(force, simtk.openmm.NonbondedForce) ]
+        PERIODIC_NONBONDED_METHODS = [ getattr(openmm.NonbondedForce, method) for method in ('PME', 'CutoffPeriodic', 'Ewald') ]        
+        self.is_periodic = (nonbonded_forces[0].getNonbondedMethod() in PERIODIC_NONBONDED_METHODS)
         
         # Select default protocols for alchemical transformation.
         self.vacuum_protocol = AbsoluteAlchemicalFactory.defaultVacuumProtocol()
@@ -516,7 +508,7 @@ class Yank(object):
         self.complex_coordinates = copy.deepcopy(complex_coordinates)
 
         # Type of restraints requested.
-        self.restraint_type = 'flat-bottom' # default to a single harmonic restraint between the ligand and receptor
+        self.restraint_type = 'harmonic' # default to a single harmonic restraint between the ligand and receptor
 
         return
 
@@ -1069,24 +1061,24 @@ def read_pdb_crd(filename, natoms_expected, verbose=False):
 if __name__ == '__main__':    
     # Initialize command-line argument parser.
 
-    """
+    usage = """
     USAGE
 
-    %prog --ligand_prmtop PRMTOP --receptor_prmtop PRMTOP { {--ligand_crd CRD | --ligand_mol2 MOL2} {--receptor_crd CRD | --receptor_pdb PDB} | {--complex_crd CRD | --complex_pdb PDB} } [-v | --verbose] [-i | --iterations ITERATIONS] [-o | --online] [-m | --mpi] [--restraints restraint-type] [--doctests] [--randomize_ligand]
+    %prog --ligand_prmtop PRMTOP --receptor_prmtop PRMTOP --complex_prmtop PRMTOP { {--ligand_crd CRD | --ligand_mol2 MOL2} {--receptor_crd CRD | --receptor_pdb PDB} | {--complex_crd CRD | --complex_pdb PDB} } [-v | --verbose] [-i | --iterations ITERATIONS] [-o | --online] [-m | --mpi] [--restraints restraint-type] [--doctests] [--randomize_ligand]
 
     EXAMPLES
 
     # Specify AMBER prmtop/crd files for ligand and receptor.
-    %prog --ligand_prmtop ligand.prmtop --receptor_prmtop receptor.prmtop --ligand_crd ligand.crd --receptor_crd receptor.crd --iterations 1000
+    %prog --ligand_prmtop ligand.prmtop --receptor_prmtop receptor.prmtop --complex_prmtop complex.prmtop --ligand_crd ligand.crd --receptor_crd receptor.crd --iterations 1000
 
     # Specify (potentially multi-conformer) mol2 file for ligand and (potentially multi-model) PDB file for receptor.
-    %prog --ligand_prmtop ligand.prmtop --receptor_prmtop receptor.prmtop --ligand_mol2 ligand.mol2 --receptor_pdb receptor.pdb --iterations 1000
+    %prog --ligand_prmtop ligand.prmtop --receptor_prmtop receptor.prmtop --complex_prmtop complex.prmtop --ligand_mol2 ligand.mol2 --receptor_pdb receptor.pdb --iterations 1000
 
     # Specify (potentially multi-model) PDB file for complex, along with flat-bottom restraints (instead of harmonic).
-    %prog --ligand_prmtop ligand.prmtop --receptor_prmtop receptor.prmtop --complex_pdb complex.pdb --iterations 1000 --restraints flat-bottom
+    %prog --ligand_prmtop ligand.prmtop --receptor_prmtop receptor.prmtop --complex_prmtop complex.prmtop --complex_pdb complex.pdb --iterations 1000 --restraints flat-bottom
 
     # Specify (potentially multi-model) PDB file for complex, along with flat-bottom restraints (instead of harmonic); randomize ligand positions/orientations at start.
-    %prog --ligand_prmtop ligand.prmtop --receptor_prmtop receptor.prmtop --complex_pdb complex.pdb --iterations 1000 --restraints flat-bottom --randomize_ligand
+    %prog --ligand_prmtop ligand.prmtop --receptor_prmtop receptor.prmtop --complex_prmtop complex.prmtop --complex_pdb complex.pdb --iterations 1000 --restraints flat-bottom --randomize_ligand
 
     NOTES
 
@@ -1096,7 +1088,7 @@ if __name__ == '__main__':
 
     # Parse command-line arguments.
     from optparse import OptionParser
-    parser = OptionParser()
+    parser = OptionParser(usage)
     parser.add_option("--ligand_prmtop", dest="ligand_prmtop_filename", default=None, help="ligand Amber parameter file", metavar="LIGAND_PRMTOP")
     parser.add_option("--receptor_prmtop", dest="receptor_prmtop_filename", default=None, help="receptor Amber parameter file", metavar="RECEPTOR_PRMTOP")    
     parser.add_option("--ligand_crd", dest="ligand_crd_filename", default=None, help="ligand Amber crd file", metavar="LIGAND_CRD")
@@ -1131,16 +1123,12 @@ if __name__ == '__main__':
             sys.exit(1)
 
     # Check arguments for validity.
-    if not (options.ligand_prmtop_filename and options.receptor_prmtop_filename):
-        parser.error("ligand and receptor prmtop files must be specified")        
+    if not (options.ligand_prmtop_filename and options.receptor_prmtop_filename and options.complex_prmtop_filename):
+        parser.error("ligand, receptor, and complex prmtop files must be specified")        
     if not (bool(options.ligand_mol2_filename) ^ bool(options.ligand_crd_filename) ^ bool(options.complex_pdb_filename) ^ bool(options.complex_crd_filename)):
         parser.error("Ligand coordinates must be specified through only one of --ligand_crd, --ligand_mol2, --complex_crd, or --complex_pdb.")
     if not (bool(options.receptor_pdb_filename) ^ bool(options.receptor_crd_filename) ^ bool(options.complex_pdb_filename) ^ bool(options.complex_crd_filename)):
         parser.error("Receptor coordinates must be specified through only one of --receptor_crd, --receptor_pdb, --complex_crd, or --complex_pdb.")    
-
-    # DEBUG: Require complex prmtop files to be specified while JDC debugs automatic combination of systems.
-    if not (options.complex_prmtop_filename):
-        parser.error("Please specify --complex_prmtop [complex_prmtop_filename] argument.  JDC is still debugging automatic generation of complex topologies from receptor+ligand.")
 
     # Ignore requested signals.
     if len(options.ignore_signals) > 0:
