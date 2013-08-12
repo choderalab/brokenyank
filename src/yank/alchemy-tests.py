@@ -69,7 +69,7 @@ from alchemy import AlchemicalState, AbsoluteAlchemicalFactory
 # MAIN AND UNIT TESTS
 #=============================================================================================
 
-def testAlchemicalFactory(reference_system, coordinates, receptor_atoms, ligand_atoms, platform_name='CUDA', annihilateElectrostatics=True, annihilateLennardJones=False):
+def testAlchemicalFactory(reference_system, coordinates, receptor_atoms, ligand_atoms, platform_name='Reference', annihilateElectrostatics=True, annihilateLennardJones=False):
     """
     Compare energies of reference system and fully-interacting alchemically modified system.
 
@@ -255,7 +255,7 @@ def test_intermediates():
 
 if __name__ == "__main__":
     # Run overlap tests.
-    test_overlap()
+    #test_overlap()
     
     # Test energy accuracy of intermediates near lambda = 1.
     test_intermediates()

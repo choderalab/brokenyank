@@ -181,7 +181,7 @@ class AbsoluteAlchemicalFactory(object):
 
         alchemical_states.append(AlchemicalState(0.00, 1.00, 1.00, 1.)) # fully interacting
         alchemical_states.append(AlchemicalState(0.00, 0.75, 1.00, 1.)) 
-        #alchemical_states.append(AlchemicalState(0.00, 0.50, 1.00, 1.))
+        alchemical_states.append(AlchemicalState(0.00, 0.50, 1.00, 1.))
         alchemical_states.append(AlchemicalState(0.00, 0.25, 1.00, 1.))
         alchemical_states.append(AlchemicalState(0.00, 0.00, 1.00, 1.)) # discharged
         alchemical_states.append(AlchemicalState(0.00, 0.00, 0.95, 1.)) 
@@ -419,6 +419,114 @@ class AbsoluteAlchemicalFactory(object):
         return 
 
     @classmethod
+    def _alchemicallyModifyLennardJonesGroup(cls, system, nonbonded_force, alchemical_atom_indices, alchemical_state, alpha=0.50, a=1, b=1, c=1, mm=None):
+        """
+        Create a softcore version of the given reference force that controls only interactions between alchemically modified atoms and
+        the rest of the system.
+        
+        This version uses the new group-based restriction capabilities of CustomNonbondedForce.
+
+        ARGUMENTS
+
+        system (simtk.openmm.System) - system to modify
+        nonbonded_force (implements NonbondedForce API) - the NonbondedForce to modify
+        alchemical_atom_indices (list of int) - atom indices to be alchemically modified
+        alchemical_state (AlchemicalState)
+
+        OPTIONAL ARGUMENTS
+
+        annihilate (boolean) - if True, will annihilate alchemically-modified self-interactions; if False, will decouple
+        alpha (float) - softcore parameter
+        a, b, c (float) - parameters describing softcore force        
+        mm (simtk.openmm implementation) - OpenMM implementation to use
+        
+        """
+
+        if mm is None:
+            mm = openmm
+
+        # Create CustomNonbondedForce to handle softcore interactions between alchemically-modified system and rest of system.
+
+        energy_expression = "4*epsilon*(lambda^a)*x*(x-1.0);"
+        energy_expression += "x = (1.0/(alpha*(1.0-lambda)^b + (r/sigma)^c))^(6/c);" 
+        energy_expression += "epsilon = sqrt(epsilon1*epsilon2);" # mixing rule for epsilon
+        energy_expression += "sigma = 0.5*(sigma1 + sigma2);" # mixing rule for sigma
+        energy_expression += "lambda = lennard_jones_lambda;" # lambda
+
+        # Create atom groups.
+        natoms = system.getNumParticles()
+        atomset1 = Set(alchemical_atom_indices)
+        if alchemical_state.annihilateLennardJones:            
+            # Annihilate interactions within alchemically-modified subsystem and between subsystem and environment.
+            # Intramolecular interactions are not preserved.
+            atomset2 = Set(range(natoms)) - Set(alchemical_atom_indices)
+        else:
+            # Decouple interactions between alchemically-modified subsystem and environment only.
+            atomset2 = Set(range(natoms))
+
+        energy_expression += "alpha = %f;" % alpha
+        energy_expression += "a = %f; b = %f; c = %f;" % (a,b,c)    
+        custom_nonbonded_force = mm.CustomNonbondedForce(energy_expression)            
+        custom_nonbonded_force.setUseLongRangeCorrection(nonbonded_force.getUseDispersionCorrection())
+        custom_nonbonded_force.addGlobalParameter("lennard_jones_lambda", alchemical_state.ligandLennardJones);
+        custom_nonbonded_force.addPerParticleParameter("sigma") # Lennard-Jones sigma
+        custom_nonbonded_force.addPerParticleParameter("epsilon") # Lennard-Jones epsilon
+        system.addForce(custom_nonbonded_force)
+
+        # Restrict interaction evaluation to be between alchemical atoms and rest of environment.
+        custom_nonbonded_force.addInteractionGroup(atomset1, atomset2)
+
+        # Create CustomBondedForce to handle softcore exceptions if alchemically annihilating ligand.
+        # TODO: Check if this logic is correct.  Should it be for decoupling instead?
+        if alchemical_state.annihilateLennardJones:
+            energy_expression = "4*epsilon*(lambda^a)*x*(x-1.0);"
+            energy_expression += "x = (1.0/(alpha*(1.0-lambda)^b + (r/sigma)^c))^(6/c);" 
+            energy_expression += "alpha = %f;" % alpha
+            energy_expression += "a = %f; b = %f; c = %f;" % (a,b,c)
+            energy_expression += "lambda = lennard_jones_lambda;"
+            custom_bond_force = mm.CustomBondForce(energy_expression)            
+            custom_bond_force.addGlobalParameter("lennard_jones_lambda", alchemical_state.ligandLennardJones);
+            custom_bond_force.addPerBondParameter("sigma") # Lennard-Jones sigma
+            custom_bond_force.addPerBondParameter("epsilon") # Lennard-Jones epsilon
+            system.addForce(custom_bond_force)
+
+        # Copy Lennard-Jones particle parameters.
+        for particle_index in range(nonbonded_force.getNumParticles()):
+            # Retrieve parameters.
+            [charge, sigma, epsilon] = nonbonded_force.getParticleParameters(particle_index)
+            # Add corresponding particle to softcore interactions.
+            if particle_index in alchemical_atom_indices:
+                # Turn off Lennard-Jones contribution from alchemically-modified particles.
+                nonbonded_force.setParticleParameters(particle_index, charge, sigma, epsilon*0.0) 
+            # Add contribution back to custom force.
+            custom_nonbonded_force.addParticle([sigma, epsilon])
+
+        # Create an exclusion for each exception in the reference NonbondedForce, assuming that NonbondedForce will handle them.
+        for exception_index in range(nonbonded_force.getNumExceptions()):
+            # Retrieve parameters.
+            [iatom, jatom, chargeprod, sigma, epsilon] = nonbonded_force.getExceptionParameters(exception_index)
+            # Exclude this atom pair in CustomNonbondedForce.
+            custom_nonbonded_force.addExclusion(iatom, jatom)
+
+            # If annihilating Lennard-Jones, these interactions will be handled by the softcore force.
+            # TODO: Check if this logic is correct.  Should it be for decoupling instead?
+            if alchemical_state.annihilateLennardJones and (iatom in alchemical_atom_indices) and (jatom in alchemical_atom_indices):
+                # Remove Lennard-Jones exception.
+                nonbonded_force.setExceptionParameters(exception_index, iatom, jatom, chargeprod, sigma, epsilon * 0.0)
+                # Add special CustomBondForce term to handle alchemically-modified Lennard-Jones exception.
+                custom_bond_force.addBond(iatom, jatom, [sigma, epsilon])
+
+        # Set periodicity and cutoff parameters corresponding to reference Force.
+        if nonbonded_force.getNonbondedMethod() in [mm.NonbondedForce.Ewald, mm.NonbondedForce.PME]:
+            # Convert Ewald and PME to CutoffPeriodic.
+            custom_nonbonded_force.setNonbondedMethod( mm.CustomNonbondedForce.CutoffPeriodic )
+        else:
+            custom_nonbonded_force.setNonbondedMethod( nonbonded_force.getNonbondedMethod() )
+        custom_nonbonded_force.setCutoffDistance( nonbonded_force.getCutoffDistance() )
+
+        return 
+
+    @classmethod
     def _createCustomSoftcoreGBOBC(cls, reference_force, particle_lambdas, sasa_model='ACE', mm=None):
         """
         Create a softcore OBC GB force using CustomGBForce.
@@ -636,6 +744,7 @@ class AbsoluteAlchemicalFactory(object):
                 if alchemical_state.ligandLennardJones != 1.0:
                     # Create softcore Lennard-Jones interactions by modifying NonbondedForce and adding CustomNonbondedForce.                
                     self._alchemicallyModifyLennardJones(system, force, self.ligand_atoms, alchemical_state)                
+                    #self._alchemicallyModifyLennardJonesGroup(system, force, self.ligand_atoms, alchemical_state)                
 
             elif isinstance(reference_force, openmm.GBSAOBCForce) and (alchemical_state.ligandElectrostatics != 1.0):
 
@@ -801,6 +910,6 @@ class AbsoluteAlchemicalFactory(object):
 if __name__ == "__main__":
     # Run doctests.
     import doctest
-    doctest.testmod()
+    doctest.testmod(verbose=True)
 
     
