@@ -25,9 +25,10 @@ def buildKeywordDictionary():
     keywords['url'] = 'http://github.com/choderalab/yank'
     keywords['download_url'] = 'http://github.com/choderalab/yank'
 
-    keywords['requires'] = ['OpenMM (>=5.2)']
+    keywords['requires'] = ['numpy', 'scipy', 'pymbar'] # automatically install pymbar from PyPI if not present
+                                      # TODO: How can we require OpenMM?
 
-    keywords['dependency_links'] = 
+    #keywords['dependency_links'] = ['http://github.com/SimTK/openmm/tarball/master#egg=openmm-5.2.egg'] # Specify OpenMM egg
 
     keywords['classifiers'] = ['Development Status :: 4 - Beta',
                                'License :: OSI Approved :: GNU General Public License v3 (GPLv3)',
@@ -50,8 +51,8 @@ YANK is a framework for experimenting with GPU-accelerated alchemical free energ
     return keywords
     
 def main():
-    if sys.version.info < (2, 6):
-        raise Exception("YANK requires Python 2.6 or later.")
+    if sys.version.info < (2, 7):
+        raise Exception("YANK requires Python 2.7 or later.")
 
     keywords = buildKeywordDictionary()
     setup(keywords)
