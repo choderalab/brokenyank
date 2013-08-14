@@ -74,7 +74,7 @@ class ReceptorLigandRestraint(object):
     EXAMPLE
         
     >>> # Create a test system.
-    >>> import simtk.pyopenmm.extras.testsystems as testsystems
+    >>> import testsystems
     >>> [system, coordinates] = testsystems.LysozymeImplicit()
     >>> # Identify receptor and ligand atoms.
     >>> receptor_atoms = range(0,2603)
@@ -371,7 +371,7 @@ class FlatBottomReceptorLigandRestraint(ReceptorLigandRestraint):
     EXAMPLE
         
     >>> # Create a test system.
-    >>> import simtk.pyopenmm.extras.testsystems as testsystems
+    >>> import testsystems
     >>> [system, coordinates] = testsystems.LysozymeImplicit()
     >>> # Identify receptor and ligand atoms.
     >>> receptor_atoms = range(0,2603)
